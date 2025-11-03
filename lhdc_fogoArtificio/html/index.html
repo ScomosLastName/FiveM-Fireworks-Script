@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firework Control</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+        #app {
+            width: 100vw;
+            height: 100vh;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    
+    <script>
+        // Get resource name for FiveM
+        const resourceName = (function() {
+            try {
+                if (window.GetParentResourceName) {
+                    return window.GetParentResourceName();
+                }
+            } catch (e) {
+                console.log('GetParentResourceName error:', e);
+            }
+            return 'firework-control';
+        })();
+
+        // App state
+        let appState = {
+            visible: false,
+            locations: [],
+            masterToggle: false
+        };
+
+        // SVG Icons
+        const icons = {
+            sparkles: `<svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>`,
+            power: `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>`,
+            mapPin: (active) => `<svg class="w-5 h-5 ${active ? 'text-purple-400' : 'text-slate-500'}" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>`
+        };
+
+        // Send to FiveM
+        function sendToFiveM(endpoint, data) {
+            fetch(`https://${resourceName}/${endpoint}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).catch(err => console.error('Error:', err));
+        }
+
+        // Close UI
+        function closeUI() {
+            appState.visible = false;
+            render();
+            sendToFiveM('closeUI', {});
+        }
+
+        // Toggle location
+        function toggleLocation(id) {
+            const location = appState.locations.find(loc => loc.id === id);
+            if (location) {
+                location.active = !location.active;
+                render();
+                sendToFiveM('toggleFirework', {
+                    configKey: location.configKey,
+                    locationId: id,
+                    name: location.name,
+                    active: location.active,
+                    coords: location.coords
+                });
+            }
+        }
+
+        // Toggle all
+        function toggleAll() {
+            appState.masterToggle = !appState.masterToggle;
+            appState.locations.forEach(loc => {
+                loc.active = appState.masterToggle;
+            });
+            render();
+            sendToFiveM('toggleAllFireworks', {
+                active: appState.masterToggle,
+                locations: appState.locations.map(loc => ({
+                    id: loc.id,
+                    configKey: loc.configKey,
+                    name: loc.name,
+                    coords: loc.coords
+                }))
+            });
+        }
+
+        // Render function
+        function render() {
+            const app = document.getElementById('app');
+            
+            if (!appState.visible || appState.locations.length === 0) {
+                app.innerHTML = '';
+                return;
+            }
+
+            const activeCount = appState.locations.filter(loc => loc.active).length;
+
+            app.innerHTML = `
+                <div class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4">
+                    <div class="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl border border-slate-700">
+                        <!-- Header -->
+                        <div class="bg-gradient-to-r from-purple-600 to-pink-600 p-6 rounded-t-2xl">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    ${icons.sparkles}
+                                    <div>
+                                        <h1 class="text-2xl font-bold text-white">Firework Control</h1>
+                                        <p class="text-purple-100 text-sm">${activeCount} of ${appState.locations.length} locations active</p>
+                                    </div>
+                                </div>
+                                <button onclick="closeUI()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-lg px-3 py-1 transition-colors">
+                                    ESC
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Master Control -->
+                        <div class="p-6 border-b border-slate-700">
+                            <button onclick="toggleAll()" class="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 flex items-center justify-center gap-3 ${
+                                appState.masterToggle
+                                    ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/50'
+                                    : 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/50'
+                            }">
+                                ${icons.power}
+                                ${appState.masterToggle ? 'Disable All Fireworks' : 'Enable All Fireworks'}
+                            </button>
+                        </div>
+
+                        <!-- Location Controls -->
+                        <div class="p-6 max-h-96 overflow-y-auto">
+                            <h2 class="text-slate-300 font-semibold mb-4 text-sm uppercase tracking-wide">Individual Locations</h2>
+                            <div class="space-y-3">
+                                ${appState.locations.map(location => `
+                                    <div class="bg-slate-800 rounded-xl p-4 border-2 transition-all ${
+                                        location.active
+                                            ? 'border-purple-500 shadow-lg shadow-purple-500/20'
+                                            : 'border-slate-700 hover:border-slate-600'
+                                    }">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-3 flex-1">
+                                                ${icons.mapPin(location.active)}
+                                                <div>
+                                                    <h3 class="text-white font-medium">${location.name}</h3>
+                                                    <p class="text-slate-400 text-xs">
+                                                        X: ${location.coords.x.toFixed(1)} Y: ${location.coords.y.toFixed(1)} Z: ${location.coords.z.toFixed(1)}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <button onclick="toggleLocation(${location.id})" class="px-5 py-2 rounded-lg font-medium transition-all ${
+                                                location.active
+                                                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
+                                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                                            }">
+                                                ${location.active ? 'Active' : 'Inactive'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="p-4 bg-slate-950 rounded-b-2xl">
+                            <p class="text-slate-500 text-xs text-center">
+                                Press ESC to close • Firework Control System v1.0
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Listen for messages from FiveM
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            if (data.type === 'setVisible') {
+                appState.visible = data.visible;
+                if (data.visible && data.locations) {
+                    appState.locations = data.locations;
+                    appState.masterToggle = data.locations.every(loc => loc.active);
+                }
+                render();
+            }
+        });
+
+        // ESC key to close
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && appState.visible) {
+                e.preventDefault();
+                closeUI();
+            }
+        });
+
+        // Initial render
+        render();
+    </script>
+</body>
+</html>

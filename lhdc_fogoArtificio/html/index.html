@@ -18,6 +18,33 @@
         .hidden {
             display: none !important;
         }
+        .scroll-hide::-webkit-scrollbar {
+            display: none;
+        }
+        /* Styled dark themed scrollbar */
+        .scroll-styled {
+            scrollbar-width: thin;
+            scrollbar-color: #6b21a8 #1e293b; /* thumb / track for Firefox */
+        }
+
+        /* Chrome, Edge, Safari */
+        .scroll-styled::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .scroll-styled::-webkit-scrollbar-track {
+            background: #1e293b; /* slate-800 */
+            border-radius: 8px;
+        }
+
+        .scroll-styled::-webkit-scrollbar-thumb {
+            background: linear-gradient(to bottom, #9333ea, #ec4899); /* purple -> pink */
+            border-radius: 8px;
+        }
+
+        .scroll-styled::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(to bottom, #a855f7, #f472b6);
+        }
     </style>
 </head>
 <body>
@@ -71,7 +98,8 @@
             const location = appState.locations.find(loc => loc.id === id);
             if (location) {
                 location.active = !location.active;
-                render();
+                updateLocationButton(id, location.active);
+                updateActiveCount();
                 sendToFiveM('toggleFirework', {
                     configKey: location.configKey,
                     locationId: id,
@@ -82,13 +110,19 @@
             }
         }
 
-        // Toggle all
         function toggleAll() {
             appState.masterToggle = !appState.masterToggle;
+
             appState.locations.forEach(loc => {
                 loc.active = appState.masterToggle;
             });
-            render();
+
+            // ✅ Update UI instantly
+            updateAllLocationButtons();
+            updateActiveCount();
+            updateMasterButton();
+
+            // ✅ Tell FiveM
             sendToFiveM('toggleAllFireworks', {
                 active: appState.masterToggle,
                 locations: appState.locations.map(loc => ({
@@ -98,6 +132,75 @@
                     coords: loc.coords
                 }))
             });
+        }
+
+        // Update a single location button without re-rendering everything
+        function updateLocationButton(id, active) {
+            const card = document.querySelector(`[data-location-id="${id}"]`);
+            if (!card) return;
+
+            // Clean previous styles to avoid class conflicts
+            card.classList.remove(
+                'border-purple-500', 'shadow-lg', 'shadow-purple-500/20',
+                'border-slate-700', 'hover:border-slate-600'
+            );
+
+            if (active) {
+                card.classList.add('border-purple-500', 'shadow-lg', 'shadow-purple-500/20');
+            } else {
+                card.classList.add('border-slate-700', 'hover:border-slate-600');
+            }
+
+            // Update icon
+            const icon = card.querySelector('.location-icon');
+            if (icon) icon.innerHTML = icons.mapPin(active);
+
+            // Update button styles
+            const btn = card.querySelector('.location-button');
+            if (btn) {
+                btn.textContent = active ? 'Active' : 'Inactive';
+                btn.className = `location-button px-5 py-2 rounded-lg font-medium transition-all ${
+                    active
+                        ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
+                        : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                }`;
+            }
+
+            updateActiveCount();
+            updateMasterButton();
+        }
+
+
+        // Update all location buttons
+        function updateAllLocationButtons() {
+            appState.locations.forEach(loc => {
+                updateLocationButton(loc.id, loc.active);
+            });
+        }
+
+        // Update master button
+        function updateMasterButton() {
+            const masterBtn = document.querySelector('.master-button');
+            if (masterBtn) {
+                masterBtn.className = `master-button w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 flex items-center justify-center gap-3 ${
+                    appState.masterToggle
+                        ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/50'
+                        : 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/50'
+                }`;
+                const textSpan = masterBtn.querySelector('.button-text');
+                if (textSpan) {
+                    textSpan.textContent = appState.masterToggle ? 'Disable All Fireworks' : 'Enable All Fireworks';
+                }
+            }
+        }
+
+        // Update active count
+        function updateActiveCount() {
+            const activeCount = appState.locations.filter(loc => loc.active).length;
+            const countElement = document.querySelector('.active-count');
+            if (countElement) {
+                countElement.textContent = `${activeCount} of ${appState.locations.length} locations active`;
+            }
         }
 
         // Render function
@@ -121,7 +224,7 @@
                                     ${icons.sparkles}
                                     <div>
                                         <h1 class="text-2xl font-bold text-white">Firework Control</h1>
-                                        <p class="text-purple-100 text-sm">${activeCount} of ${appState.locations.length} locations active</p>
+                                        <p class="active-count text-purple-100 text-sm">${activeCount} of ${appState.locations.length} locations active</p>
                                     </div>
                                 </div>
                                 <button onclick="closeUI()" class="text-white hover:bg-white hover:bg-opacity-20 rounded-lg px-3 py-1 transition-colors">
@@ -132,29 +235,31 @@
 
                         <!-- Master Control -->
                         <div class="p-6 border-b border-slate-700">
-                            <button onclick="toggleAll()" class="w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 flex items-center justify-center gap-3 ${
+                            <button onclick="toggleAll()" class="master-button w-full py-4 px-6 rounded-xl font-semibold text-lg transition-all transform hover:scale-105 flex items-center justify-center gap-3 ${
                                 appState.masterToggle
                                     ? 'bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg shadow-red-500/50'
                                     : 'bg-gradient-to-r from-green-500 to-green-600 text-white shadow-lg shadow-green-500/50'
                             }">
                                 ${icons.power}
-                                ${appState.masterToggle ? 'Disable All Fireworks' : 'Enable All Fireworks'}
+                                <span class="button-text">${appState.masterToggle ? 'Disable All Fireworks' : 'Enable All Fireworks'}</span>
                             </button>
                         </div>
 
                         <!-- Location Controls -->
-                        <div class="p-6 max-h-96 overflow-y-auto">
+                        <div class="p-6 max-h-96 overflow-y-auto scroll-styled">
                             <h2 class="text-slate-300 font-semibold mb-4 text-sm uppercase tracking-wide">Individual Locations</h2>
                             <div class="space-y-3">
                                 ${appState.locations.map(location => `
-                                    <div class="bg-slate-800 rounded-xl p-4 border-2 transition-all ${
+                                    <div data-location-id="${location.id}" class="location-card bg-slate-800 rounded-xl p-4 border-2 transition-all ${
                                         location.active
                                             ? 'border-purple-500 shadow-lg shadow-purple-500/20'
                                             : 'border-slate-700 hover:border-slate-600'
                                     }">
                                         <div class="flex items-center justify-between">
                                             <div class="flex items-center gap-3 flex-1">
-                                                ${icons.mapPin(location.active)}
+                                                <div class="location-icon">
+                                                    ${icons.mapPin(location.active)}
+                                                </div>
                                                 <div>
                                                     <h3 class="text-white font-medium">${location.name}</h3>
                                                     <p class="text-slate-400 text-xs">
@@ -162,7 +267,7 @@
                                                     </p>
                                                 </div>
                                             </div>
-                                            <button onclick="toggleLocation(${location.id})" class="px-5 py-2 rounded-lg font-medium transition-all ${
+                                            <button onclick="toggleLocation(${location.id})" class="location-button px-5 py-2 rounded-lg font-medium transition-all ${
                                                 location.active
                                                     ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-md'
                                                     : 'bg-slate-700 text-slate-300 hover:bg-slate-600'

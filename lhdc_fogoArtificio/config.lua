@@ -90,3 +90,23 @@ Config.SpawnFireworksInCayoPerico = {
     Alias = "Cayo Perico"
 }
 Config.FireworksTime = '15' -- Time in Minutes
+Config.Keys = {
+        "SpawnFireworksInMazebankTower",
+        "SpawnFireworksInCenterPark",
+        "SpawnFireworksInVinewoodLogo",
+        "SpawnFireworksInMazeBank",
+        "SpawnFireworksInRedBridge",
+        "SpawnFireworksInRichardsMajestic",
+        "SpawnFireworksInObservatory",
+        "SpawnFireworksInYacht",
+        "SpawnFireworksInSandyShores",
+        "SpawnFireworksInMRC",
+        "SpawnFireworksInChiliad",
+        "SpawnFireworksInRoxwood",
+        "SpawnFireworksInJuniperByTheShore",
+        "SpawnFireworksInMarinaBeachLightHouse",
+        "SpawnFireworksInElGordoDrive",
+        "SpawnFireworksInMountJosiah",
+        "SpawnFireworksInCargoShip",
+        "SpawnFireworksInCayoPerico",
+    }

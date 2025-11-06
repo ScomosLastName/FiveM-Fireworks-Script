@@ -1,5 +1,5 @@
 # FiveM-Fireworks-Script
-FiveM Fireworks Script for New Year, will automatically start fireworks for all players at 00:00 on New Year
+FiveM Fireworks Script for Events, Low performance impact
 
 # How-To
 Drag and Drop the script in you server resources folder, add 'ensure lhdc_fogoArtificio' in your server.cfg
@@ -22,3 +22,6 @@ Returns All location keys defined in the config
 exports.lhdc_fogoArtificio.GetLocationData()
 ```
 Returns Data Related to All Locations
+
+# Performance
+When fireworks are not going the script uses 0.00% CPU rescources and > 1MB of memory

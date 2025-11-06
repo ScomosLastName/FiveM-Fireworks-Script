@@ -11,7 +11,10 @@ client_scripts {
     'client_exports.lua'
 }
 server_script 'server.lua'
-shared_script 'config.lua'
+shared_scripts {
+    '@ox_lib/init.lua',
+    'config.lua'
+}
 
 ui_page 'html/index.html'
 files {

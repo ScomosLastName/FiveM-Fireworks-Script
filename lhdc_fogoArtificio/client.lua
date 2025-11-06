@@ -31,16 +31,9 @@ local function getLocationsFromConfig()
     return locations
 end
 
--- Command to open/close the UI
-RegisterCommand('fireworks', function()
-        -- Permission Check
-    if not (exports['wasabi_discord']:checkForRole(953180998215024656) -- Admin
-    -- or exports['wasabi_discord']:checkForRole(953180998215024653) -- Developer
-    ) then
-        print("No permission.")
-        return
-    end
-
+-- Export to open and close the UI
+RegisterNetEvent('lhdc_fogoArtificio:toggleUI')
+AddEventHandler('lhdc_fogoArtificio:toggleUI', function()
     isUIOpen = not isUIOpen
     
     if isUIOpen then
@@ -60,7 +53,7 @@ RegisterCommand('fireworks', function()
         })
         print('Closing fireworks UI')
     end
-end, false)
+end)
 
 -- Handle closing the UI
 RegisterNUICallback('closeUI', function(data, cb)
@@ -90,13 +83,12 @@ end)
 -- Handle all fireworks toggle
 RegisterNUICallback('toggleAllFireworks', function(data, cb)
     -- print('Toggling all fireworks: ' .. tostring(data.active))
-    print(json.encode(data))
+    -- print(json.encode(data))
 
     for _, location in ipairs(data.locations) do
         -- print('Location: ' .. location.name)
         TriggerServerEvent('lhdc_fogoArtificio:updateConfig', -1, data.active, location.name)
     end
-    
     cb('ok')
 end)
 
@@ -109,10 +101,23 @@ AddEventHandler('lhdc_fogoArtificio:updateEnabledStatus', function(status, alias
         if type(data) == "table" and data.Alias and data.Alias == alias then
             data.enabled = status -- update enabled state
             --print(("Fireworks at '%s' set to: %s"):format(alias, tostring(status)))
+            local anyEnabled = false
+
+            for key, data in pairs(Config) do
+                if type(data) == "table" and data.enabled == true then
+                    anyEnabled = true
+                    break  -- no need to check further once you find one true
+                end
+            end
+
+            if anyEnabled then
+                BeginFireworks()
+            else
+                StopFireworks()
+            end
             return
         end
     end
-
     --print("No config entry found with alias:", alias)
 end)
 
@@ -127,93 +132,117 @@ Citizen.CreateThread(function() --Starts Fireworks if player joins during event
 		Citizen.Wait(0)
 		if NetworkIsSessionStarted() then
 			TriggerServerEvent('lhdc_fogoArtificio:requestUpdatedConfig')
+            local anyEnabled = false
+
+            for key, data in pairs(Config) do
+                if type(data) == "table" and data.enabled == true then
+                    anyEnabled = true
+                    break  -- no need to check further once you find one true
+                end
+            end
+
+            if anyEnabled then
+                BeginFireworks()
+            else
+                StopFireworks()
+            end
             loadedClient = true
 		end
 	end
 end)
 
-Citizen.CreateThread(function()
-    while true do
-        local anyEnabled = false
+-- Citizen.CreateThread(function()
+--     while true do
+--         local anyEnabled = false
 
-        for key, data in pairs(Config) do
-            if type(data) == "table" and data.enabled == true then
-                anyEnabled = true
-                break  -- no need to check further once you find one true
-            end
+--         for key, data in pairs(Config) do
+--             if type(data) == "table" and data.enabled == true then
+--                 anyEnabled = true
+--                 break  -- no need to check further once you find one true
+--             end
+--         end
+
+--         if anyEnabled then
+--             BeginFireworks()
+--         else
+--             StopFireworks()
+--         end
+--         Citizen.Wait(1000) -- Check every second
+--     end
+-- end)
+
+FireworksThread = nil
+
+function StopFireworks()
+    print("Closing thread")
+    FireworksThread = nil
+end
+function BeginFireworks()
+    if FireworksThread then
+        return
+    end
+    print("Creating Thread")
+    FireworksThread = Citizen.CreateThread(function()
+        local pos = Config.SpawnFireworksInMazebankTower.Location -- Maze Bank
+
+        local pos1 = Config.SpawnFireworksInCenterPark.Location -- Center Park
+
+        local pos2 = Config.SpawnFireworksInVinewoodLogo.Location -- PT Logo
+
+        local pos3 = Config.SpawnFireworksInMazeBank.Location -- maze bank arena
+
+        local pos4 = Config.SpawnFireworksInRedBridge.Location -- Red Bridge
+
+        local pos5 = Config.SpawnFireworksInRichardsMajestic.Location -- Richards Majestic
+
+        local pos6 = Config.SpawnFireworksInObservatory.Location -- Observatory
+
+        local pos7 = Config.SpawnFireworksInYacht.Location -- Yacht
+
+        local pos8 = Config.SpawnFireworksInSandyShores.Location -- Sandy Shores
+
+        local pos9 = Config.SpawnFireworksInMRC.Location -- MRC
+
+        local pos10 = Config.SpawnFireworksInChiliad.Location -- Chiliad
+
+        local pos11 = Config.SpawnFireworksInRoxwood.Location -- Roxwood
+
+        local pos12 = Config.SpawnFireworksInJuniperByTheShore.Location -- Juniper By The Shore
+
+        local pos13 = Config.SpawnFireworksInMarinaBeachLightHouse.Location -- Marina Beach Light House
+
+        local pos14 = Config.SpawnFireworksInElGordoDrive.Location -- El Gordo Drive
+
+        local pos15 = Config.SpawnFireworksInMountJosiah.Location -- Mount Josiah
+
+        local pos16 = Config.SpawnFireworksInCargoShip.Location -- Cargo Ship
+
+        local pos17 = Config.SpawnFireworksInCayoPerico.Location -- Cayo Perico
+
+        local delay = 400
+
+        local asset1 = "proj_indep_firework"
+        RequestNamedPtfxAsset(asset1)
+        while not HasNamedPtfxAssetLoaded(asset1) do
+            Citizen.Wait(1)
+        end
+        local asset2 = "proj_indep_firework_v2"
+        RequestNamedPtfxAsset(asset2)
+        while not HasNamedPtfxAssetLoaded(asset2) do
+            Citizen.Wait(1)
+        end
+        local asset3 = "scr_indep_fireworks"
+        RequestNamedPtfxAsset(asset3)
+        while not HasNamedPtfxAssetLoaded(asset3) do
+            Citizen.Wait(1)
+        end
+        local asset4 = "proj_xmas_firework"
+        RequestNamedPtfxAsset(asset4)
+        while not HasNamedPtfxAssetLoaded(asset4) do
+            Citizen.Wait(1)
         end
 
-        if anyEnabled then
-            fireworking = true
-        else
-            fireworking = false
-        end
-        Citizen.Wait(1000) -- Check every second
-    end
-end)
-
-Citizen.CreateThread(function()
-	local pos = Config.SpawnFireworksInMazebankTower.Location -- Maze Bank
-
-    local pos1 = Config.SpawnFireworksInCenterPark.Location -- Center Park
-
-    local pos2 = Config.SpawnFireworksInVinewoodLogo.Location -- PT Logo
-
-    local pos3 = Config.SpawnFireworksInMazeBank.Location -- maze bank arena
-
-    local pos4 = Config.SpawnFireworksInRedBridge.Location -- Red Bridge
-
-    local pos5 = Config.SpawnFireworksInRichardsMajestic.Location -- Richards Majestic
-
-    local pos6 = Config.SpawnFireworksInObservatory.Location -- Observatory
-
-    local pos7 = Config.SpawnFireworksInYacht.Location -- Yacht
-
-    local pos8 = Config.SpawnFireworksInSandyShores.Location -- Sandy Shores
-
-    local pos9 = Config.SpawnFireworksInMRC.Location -- MRC
-
-    local pos10 = Config.SpawnFireworksInChiliad.Location -- Chiliad
-
-    local pos11 = Config.SpawnFireworksInRoxwood.Location -- Roxwood
-
-    local pos12 = Config.SpawnFireworksInJuniperByTheShore.Location -- Juniper By The Shore
-
-    local pos13 = Config.SpawnFireworksInMarinaBeachLightHouse.Location -- Marina Beach Light House
-
-    local pos14 = Config.SpawnFireworksInElGordoDrive.Location -- El Gordo Drive
-
-    local pos15 = Config.SpawnFireworksInMountJosiah.Location -- Mount Josiah
-
-    local pos16 = Config.SpawnFireworksInCargoShip.Location -- Cargo Ship
-
-    local pos17 = Config.SpawnFireworksInCayoPerico.Location -- Cayo Perico
-
-	local delay = 400
-
-    local asset1 = "proj_indep_firework"
-    RequestNamedPtfxAsset(asset1)
-    while not HasNamedPtfxAssetLoaded(asset1) do
-        Citizen.Wait(1)
-    end
-    local asset2 = "proj_indep_firework_v2"
-    RequestNamedPtfxAsset(asset2)
-	while not HasNamedPtfxAssetLoaded(asset2) do
-        Citizen.Wait(1)
-    end
-	local asset3 = "scr_indep_fireworks"
-    RequestNamedPtfxAsset(asset3)
-	while not HasNamedPtfxAssetLoaded(asset3) do
-        Citizen.Wait(1)
-    end
-    local asset4 = "proj_xmas_firework"
-    RequestNamedPtfxAsset(asset4)
-    while not HasNamedPtfxAssetLoaded(asset4) do
-        Citizen.Wait(1)
-    end
-
-    while true do
-        if(fireworking)then
+        while FireworksThread do
             Citizen.Wait(delay)
             if(Config.SpawnFireworksInMazebankTower.enabled)then
                 UseParticleFxAssetNextCall(asset1)
@@ -1031,17 +1060,6 @@ Citizen.CreateThread(function()
                 local part = StartParticleFxNonLoopedAtCoord("scr_xmas_firework_burst_fizzle", pos17[1] + math.random(-50, 50), pos17[2] + math.random(-50, 50), pos17[3] + 25 + math.random(50, 100), 0.0, 0.0, 0.0, 2.0, false, false, false)
                 RemoveParticleFx(part, false)
             end
-        else
-            Citizen.Wait(1100)
         end
-    end
-end)
-
-RegisterNetEvent("lhdc_fogoArtificio:start")
-AddEventHandler("lhdc_fogoArtificio:start", function()
-    fireworking = true
-end)
-RegisterNetEvent("lhdc_fogoArtificio:stop")
-AddEventHandler("lhdc_fogoArtificio:stop", function()
-    fireworking = false
-end)
+    end)
+end

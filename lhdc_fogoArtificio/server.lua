@@ -17,3 +17,9 @@ RegisterServerEvent('lhdc_fogoArtificio:requestUpdatedConfig')
 AddEventHandler('lhdc_fogoArtificio:requestUpdatedConfig', function(source)
     TriggerClientEvent("lhdc_fogoArtificio:recieveUpdatedConfig", source, Config)
 end)
+
+lib.addCommand('fireworks', {restricted = 'admin'}, function(source, args, raw)
+    if source > 0 then
+        TriggerClientEvent('lhdc_fogoArtificio:toggleUI', source)
+    end
+end)
